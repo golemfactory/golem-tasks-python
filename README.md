@@ -1,92 +1,116 @@
-# TASKS - new approach to the task API
+# golem-tasks - run tasks on the Golem Network
 
-## What & why
+## Current state
 
-### Main features
+This is a MVP. There are real-life usecases where `golem-tasks` is really good, but also many things are still missing.
 
-* Can work forever
-* Cost per result management
-* Budget management
-* Execution monitoring in a pretty table
-* Recovery in case of aburpt stop
+There is already [task API in `yapapi`](https://yapapi.readthedocs.io/en/stable/api.html#yapapi.Golem.execute_tasks).
+Main new features in `golem-tasks`:
 
-### Current state
+*   Convenient tool for execution monitoring
+*   Recovery in case of aburpt stop
+*   Cost management
+*   Hourly budget
+*   All relevant execution-related data is saved to a Postgresql database
+*   Built on top of [`golem-core`](https://github.com/golemfactory/golem-core-python)
 
-Works pretty well.
-Interface is OK, although could be improved.
-There is quite a lot that needs improvements, but current version should be good enough for a release, after some minor cleanup.
+Known missing features:
 
-### Next steps
+*   Parts of the interface mentioned in "missing features" section in https://github.com/golemfactory/golem-tasks-python/issues/2
+*   Mid-agreement payments
 
-1.  Extract to a separate repo
-2.  Decide on the final version of the interface
-3.  (Maybe) fix some most important things, if we decide there are any (e.g. add typing?)
-4.  Write a proper README
-5.  Release
+## Start
 
-## Usage
+### Prerequisites
 
-### Prereqs
+1.  A running requestor [`yagna`](https://handbook.golem.network/requestor-tutorials/flash-tutorial-of-requestor-development).
+2.  Access to a [PostgreSQL](https://www.postgresql.org/download/) database.
 
-A running Postgresql server.
+    `Golem-tasks` interface requires specifying a `dsn` for the database you want to work in.
+    Example `dsn`: `dbname=go user=lem password=1234 host=localhost port=5432`
+    
+    To test if you have a correct `dsn` run `psql -d $DSN -c "SELECT 1"`.
+    You can also use [environment variables](https://www.postgresql.org/docs/current/libpq-envars.html) instead, eg. `$PGPASSWORD`.
+
+3.  [Poetry](https://python-poetry.org/docs/)
+4.  This was developed & tested on `Ubuntu 20.04` and `python3.8.10`, but I don't know any reason why other environments should not work.
 
 ### Installation
 
-Install `golem_core` and work from the repo directory.
+```
+#   Copy the code
+git clone https://github.com/golemfactory/golem-tasks-python.git
+cd golem-tasks-python
 
-### Commands
+#   Install. Virtual environment is recommended.
+poetry install
+
+#   Initialize the database. This will create a "tasks" schema and few tables in it.
+python3 -m golem_tasks install --dsn $DSN
+```
+
+### Check if everything works
+```
+python3 -m golem_tasks run examples.hello_world --workers 3
+```
+
+If this keeps running, everything should be fine. Stop with Ctrl + C.
+Run commands from the [Monitoring](#Monitoring) section to check the execution details.
+
+
+## Execution
+
+### `run` command
 
 ```
-#   Install the database (creates schema "tasks")
-python3 -m tasks install [--dsn]
-
-#   Execute tasks
 python3 -m tasks run my_module [--dsn, --run-id, --workers, --max-price, --budget]
+```
 
+* `--dsn` - Database location.
+* `--run-id` - String, identifier of a run. 
+
+  Defaults to a random string. Executions with different `run_id` are totally separate.
+  Subsequent `run` with the same `run-id` will try to recover as much as possible from the previous execution
+  (i.e. reuse activities and agreements).
+
+* `--workers` - Integer, expected number of activities working at the same time. Defaults to 1.
+* `--max-price` - Float, maximal cost per a single result, optional.
+
+   E.g. `--max-price=0.001` means "we don't want to work on activities where average price per result is greater than `0.001`".
+   More details in [Cost management](#Cost-management) section.
+  
+* `--budget` - String, how much we are willing to pay at most. Currently the only accepted format is hourly budget, e.g. `3/h`. Defaults to `1/h`.
+
+### Monitoring
+
+```
 #   Print a single-row summary table
-python3 -m tasks summary [--dsn, --run-id]
+python3 -m golem_tasks summary [--dsn, --run-id]
 
 #   Print a summary table with rows corresponding to activities
-python3 -m tasks show [--dsn, --run-id]
+python3 -m golem_tasks show [--dsn, --run-id]
 ```
 
-#### Options
-* `--dsn` - Database location, e.g. `dbname=go user=lem password=1234 host=localhost port=5432`, defaults to an empty string.
-* `--run-id` - String, identifier of a run. Runs are totally separate. Defaults to a random string in the `run` command
-               and to most recent `run-id` in `show` and `summary` commands.
-               Repeated `run` with the same `run-id` will try to recover as much as possible from the previous execution
-               (i.e. reuse activities and agreements).
-* `--workers` - Integer, expected number of activities working at the same time. Defaults to 1.
-* `--max-price` - Float, maximal cost per a single result. Details in a further section.
-* `--budget` - String, how much we are willing to pay at most. Currently only accepted format is hourly budget, e.g. `3/h`. Defaults to `1/h`.
+In both commands the default `--run-id` is the most recent new `run_id`.
 
-
-#### Sample run
-
+These two commands can be combined into a single non-stop monitoring tool:
 ```
-python3 -m tasks run yacat --workers 10 --max-price 0.001 --budget 10/h --run-id test_1
+while true; do sleep 1; DATA=$(python3 -m golem_tasks show); SUMMARY=$(python3 -m golem_tasks summary); clear -x; echo "$DATA"; echo "$SUMMARY"; done
 ```
 
-### Utilities
+### API for the `run` command
 
-```
-# Constant monitoring of the current run
-while true; do sleep 1; DATA=$(python3 -m tasks show); SUMMARY=$(python3 -m tasks summary); clear -x; echo "$DATA"; echo "$SUMMARY"; done
-```
+If you don't want CLI for some reason, `golem_tasks.run.Runner` class can also be used directly.
+Check the `golem_tasks.run.run` function for details.
+This might be useful if you need access to the `GolemNode` instance.
 
-## APP Logic
+## Build a new app.
 
-### my\_module contents
+The easiest way to build your own application is to copy `examples/hello_world.py` and modify it while preserving the same interface.
 
-Module should specify:
+For an example of a more complex app, check `examples/yacat.py`. NOTE: to run this you must also install `aiofiles`.
 
-*   `PAYLOAD`
-*   `get_tasks` - iterable yielding callables that accept an activity object (`golem_core.low.Activity`) as the only argument
-*   `results_cnt` - function returning the number of computed results. This should be optional, but now is not.
-
-In the future some optional things will be added (e.g. activity-preparing function, offer-scoring function).
-
-Sample files: `yacat.py`, `example_tasks.py` (the latter doesn't work with restarting because `results_cnt` has no between-execution permanence).
+## Additional details
 
 ### Restarting
 
