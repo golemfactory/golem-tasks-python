@@ -1,0 +1,24 @@
+[build-system]
+requires = ["poetry_core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "golem-tasks"
+version = "0.0.1"
+description = "Python Golem (https://www.golem.network/) Task API"
+authors = ["Jan Betley <jan.betley@golem.network>", "GolemFactory <contact@golem.network>"]
+license = "LGPL-3.0-or-later"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: AsyncIO",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Distributed Computing"
+]
+
+repository = "https://github.com/johny-b/golem-tasks-python"  # TODO - move to /golemfactory/
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.8.0"
+aiopg = "^1.4.0"
+golem_core = {git = "https://github.com/golemfactory/golem-core-python.git", branch = "main"}
