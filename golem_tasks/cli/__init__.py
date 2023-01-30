@@ -4,7 +4,7 @@ import click
 import psycopg2
 from prettytable import PrettyTable
 
-from tasks.run import run as _tasks_run
+from golem_tasks.run import run as _tasks_run
 from .. import assets
 
 

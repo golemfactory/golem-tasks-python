@@ -1,4 +1,4 @@
-from tasks.cli import cli
+from golem_tasks.cli import cli
 
 
 if __name__ == '__main__':

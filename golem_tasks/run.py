@@ -2,14 +2,14 @@ import asyncio
 
 from golem_core import GolemNode
 
-from tasks.db import DB
+from golem_tasks.db import DB
 
-from tasks.task_executor import TaskExecutor
-from tasks.activity_manager import ActivityManager
-from tasks.payment_manager import PaymentManager
-from tasks.event_writer import EventWriter
-from tasks.cost_manager import CostManager
-from tasks.event_bus import ParallelEventBus
+from golem_tasks.task_executor import TaskExecutor
+from golem_tasks.activity_manager import ActivityManager
+from golem_tasks.payment_manager import PaymentManager
+from golem_tasks.event_writer import EventWriter
+from golem_tasks.cost_manager import CostManager
+from golem_tasks.event_bus import ParallelEventBus
 
 class Runner:
     def __init__(self, *, payload, get_tasks, results_cnt, dsn, run_id, workers, result_max_price, budget_str):
