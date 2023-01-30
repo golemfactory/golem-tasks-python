@@ -77,7 +77,7 @@ python3 -m tasks run my_module [--dsn, --run-id, --workers, --max-price, --budge
 * `--max-price` - Float, maximal cost per a single result, optional.
 
    E.g. `--max-price=0.001` means "we don't want to work on activities where average price per result is greater than `0.001`".
-   More details in [Cost management](#Cost-management) section.
+   More details in the [Cost management](#Cost-management) section.
   
 * `--budget` - String, how much we are willing to pay at most. Currently the only accepted format is hourly budget, e.g. `3/h`. Defaults to `1/h`.
 
@@ -104,7 +104,7 @@ If you don't want CLI for some reason, `golem_tasks.run.Runner` class can also b
 Check the `golem_tasks.run.run` function for details.
 This might be useful if you need access to the `GolemNode` instance.
 
-## Build a new app.
+## Build a new app
 
 The easiest way to build your own application is to copy `examples/hello_world.py` and modify it while preserving the same interface.
 
@@ -119,7 +119,7 @@ For an example of a more complex app, check `examples/yacat.py`. NOTE: to run th
 python3 -m tasks my_module run --workers 10 --run-id my_run
 
 #   After a while kill the process in a non-graceful way (e.g. kill -9)
-#   And start again
+#   and start again
 python3 -m tasks my_module run --workers 10 --run-id my_run
 ```
 Second run will try to:
@@ -147,3 +147,15 @@ result calculated by the activity and stop it if the cost exceedes X.
 
 Note that now all debit notes/invoices are accepted, so our final price might be nowhere near the `--max-price` 
 (e.g. we might get an invoice for 10 GLM after a second and we'll accept it if we have high enough budget).
+
+### FAQ
+
+* Q: How do I change the payment network? or subnet?  
+  A: Use `YAGNA_PAYMENT_NETWORK` `YAGNA_SUBNET` variables. E.g. 
+  ```
+  YAGNA_PAYMENT_NETWORK=mainnet YAGNA_SUBNET=public-beta python3 -m golem_tasks run examples.hello_world
+  ```
+
+* Q: I see some traceback on the screen. Why? Is my program still working?  
+  A: Currently many not-really-important tracebacks are printed to the screen for debugging purposes.
+  If the script didn't exit, it should still be working correctly.
