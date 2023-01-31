@@ -1,24 +1,5 @@
 # golem-tasks - run tasks on the Golem Network
 
-## Current state
-
-This is a MVP. There are real-life usecases where `golem-tasks` is really good, but also many things are still missing.
-
-There is already [task API in `yapapi`](https://yapapi.readthedocs.io/en/stable/api.html#yapapi.Golem.execute_tasks).
-Main new features in `golem-tasks`:
-
-*   Convenient tool for execution monitoring
-*   Recovery in case of aburpt stop
-*   Cost management
-*   Hourly budget
-*   All relevant execution-related data is saved to a Postgresql database
-*   Built on top of [`golem-core`](https://github.com/golemfactory/golem-core-python)
-
-Known missing features:
-
-*   Parts of the interface mentioned in "missing features" section in https://github.com/golemfactory/golem-tasks-python/issues/2
-*   Mid-agreement payments
-
 ## Start
 
 ### Prerequisites
@@ -27,7 +8,7 @@ Known missing features:
 2.  Access to a [PostgreSQL](https://www.postgresql.org/download/) database.
 
     `Golem-tasks` interface requires specifying a `dsn` for the database you want to work in.
-    Example `dsn`: `dbname=go user=lem password=1234 host=localhost port=5432`
+    Example `dsn`: `dbname=golem user=golem password=1234 host=localhost port=5432`
     
     To test if you have a correct `dsn` run `psql -d $DSN -c "SELECT 1"`.
     You can also use [environment variables](https://www.postgresql.org/docs/current/libpq-envars.html) instead, eg. `$PGPASSWORD`.
@@ -66,7 +47,7 @@ Run commands from the [Monitoring](#Monitoring) section to check the execution d
 python3 -m tasks run my_module [--dsn, --run-id, --workers, --max-price, --budget]
 ```
 
-* `--dsn` - Database location.
+* `--dsn` - Database location, e.g. `dbname=golem user=golem password=1234 host=localhost port=5432`
 * `--run-id` - String, identifier of a run. 
 
   Defaults to a random string. Executions with different `run_id` are totally separate.
@@ -97,12 +78,6 @@ These two commands can be combined into a single non-stop monitoring tool:
 ```
 while true; do sleep 1; DATA=$(python3 -m golem_tasks show); SUMMARY=$(python3 -m golem_tasks summary); clear -x; echo "$DATA"; echo "$SUMMARY"; done
 ```
-
-### API for the `run` command
-
-If you don't want CLI for some reason, `golem_tasks.run.Runner` class can also be used directly.
-Check the `golem_tasks.run.run` function for details.
-This might be useful if you need access to the `GolemNode` instance.
 
 ## Build a new app
 
@@ -150,12 +125,53 @@ Note that now all debit notes/invoices are accepted, so our final price might be
 
 ### FAQ
 
-* Q: How do I change the payment network? or subnet?  
-  A: Use `YAGNA_PAYMENT_NETWORK` `YAGNA_SUBNET` variables. E.g. 
-  ```
-  YAGNA_PAYMENT_NETWORK=mainnet YAGNA_SUBNET=public-beta python3 -m golem_tasks run examples.hello_world
-  ```
+**Q**: How do I change the payment network? or the subnet?  
+**A**: Use `YAGNA_PAYMENT_NETWORK` and `YAGNA_SUBNET` variables. E.g. 
+```
+YAGNA_PAYMENT_NETWORK=mainnet YAGNA_SUBNET=public-beta python3 -m golem_tasks run examples.hello_world
+```
 
-* Q: I see some traceback on the screen. Why? Is my program still working?  
-  A: Currently many not-really-important tracebacks are printed to the screen for debugging purposes.
-  If the script didn't exit, it should still be working correctly.
+**Q**: I see some traceback on the screen. Why? Is my program still working?  
+**A**: Currently many not-really-important tracebacks are printed to the screen for debugging purposes.
+If the script didn't exit, it should still be working correctly.
+
+**Q**: Is there any API for `golem_tasks`, in case I didn't want to use CLI?  
+**A**: Instead of executing the `run` command you can do:
+
+```
+runner = Runner(
+    #   Arguments defined in a source file (e.g. in examples/hello_world.py)
+    payload=payload,
+    get_tasks=get_tasks,
+    results_cnt=results_cnt,
+
+    #   Arguments passed from the command line
+    dsn=dsn,
+    run_id=run_id,
+    workers=workers,
+    result_max_price=result_max_price,
+    budget_str=budget_str,
+)
+await runner.main()
+```
+
+Check `golem_tasks/run.py` for more details.
+
+## Current state
+
+This is a MVP. There are real-life usecases where `golem-tasks` is really good, but many things are still missing.
+
+There is already [task API in `yapapi`](https://yapapi.readthedocs.io/en/stable/api.html#yapapi.Golem.execute_tasks).
+Main new features in `golem-tasks`:
+
+*   Convenient tool for execution monitoring
+*   Recovery in case of aburpt stop
+*   Cost management
+*   Hourly budget
+*   All relevant execution-related data is saved to a Postgresql database
+*   Built on top of [`golem-core`](https://github.com/golemfactory/golem-core-python)
+
+Known missing features:
+
+*   Parts of the interface mentioned in "missing features" section in https://github.com/golemfactory/golem-tasks-python/issues/2
+*   Mid-agreement payments
