@@ -21,4 +21,4 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.8.0"
 aiopg = "^1.4.0"
-golem_core = {git = "https://github.com/golemfactory/golem-core-python.git", branch = "main"}
+golem-core = "^0.1.0"
